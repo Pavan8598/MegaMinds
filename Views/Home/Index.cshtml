@@ -1,0 +1,208 @@
+﻿@model WebApplication1.Models.User
+@{
+    ViewBag.Title = "Home Page";
+}
+<script src="~/Scripts/jquery-3.4.1.min.js"></script>
+<script src="~/Scripts/bootstrap.min.js"></script>
+<link href="~/Content/bootstrap.min.css" rel="stylesheet" />
+
+<div class="container" style="margin-top:3%">
+    <a href="#" class="btn btn-info" onclick="AddNewUser(0)">Add New User</a>
+    <br />
+    <br />
+
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone No.</th>
+                <th>Edit</th>
+                <th>Delete</th>
+
+            </tr>
+        </thead>
+        <tbody id="SetUserList">
+            <tr id="LoadingStatus" style="color:red"></tr>
+        </tbody>
+    </table>
+
+    <div class="modal fade" id="MyModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <a href="#" class="close" data-dismiss="modal">&times;</a>
+                    <h4 id="ModalTitle"></h4>
+                </div>
+                <div class="modal-body">
+                    <form id="form">
+                        <fieldset id="SubmitForm">
+                            <div>
+                                @Html.HiddenFor(m => m.Id, new { @id = "Id" })
+                            </div>
+                            <div class="form-group">
+                                @Html.TextBoxFor(m => m.Name, new { @id = "Name", @class = "form-control", @placeholder = "Name*" })
+                            </div>
+                            <div class="form-group">
+                                @Html.TextBoxFor(m => m.Email, new { @id = "Email", @class = "form-control", @placeholder = "Email*" })
+                            </div>
+                            <div class="form-group">
+                                @Html.TextBoxFor(m => m.Phone_no, new { @id = "Phone_no", @class = "form-control", @placeholder = "Phone no*" })
+                            </div>
+                            <div class="form-group">
+                                @Html.TextBoxFor(m => m.Address, new { @id = "Address", @class = "form-control", @placeholder = "Address" })
+                            </div>
+                            <div class="form-group">
+                                @Html.DropDownListFor(x => x.State, new[] {
+                              new SelectListItem() {Text = "Gujrat",
+                                  Value = "Gujrat"},
+                              new SelectListItem() {Text = "Maharashtra",
+                                  Value = "Maharashtra"}
+                          }, "Choose an option", new { @class = "form--control" })
+                            </div>
+                            <div class="form-group">
+                                @Html.DropDownListFor(x => x.City, new[] {
+                              new SelectListItem() {Text = "Surat",
+                                  Value = "Surat"},
+                              new SelectListItem() {Text = "Bardoli",
+                                  Value = "Bardoli"},
+                               new SelectListItem() {Text = "Baroda",
+                                  Value = "Baroda"},
+                                new SelectListItem() {Text = "Mumbai",
+                                  Value = "Mumbai"}
+                          }, "Choose an option", new { @class = "form--control" })
+                            </div>
+                            <div class="form-group">
+                                @Html.CheckBox("Agree", true, new { @placeholder = "Agree" })
+                            </div>
+
+                            <div class="form-group">
+                                <a href="#" class="btn btn-block btn-danger" id="SaveUserRecord">Save</a>
+                            </div>
+
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="DeleteConfirmation">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <a href="#" class="close" data-dismiss="modal">&times;</a>
+                    <h4>Delete Student Record</h4>
+                </div>
+                <div class="modal-body">
+                    <h4>Are You Sure? You Want To Delete This Record.</h4>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-primary" data-dismiss="modal" id="r">Cancle</a>
+                    <a href="#" class="btn btn-danger" onclick="ConfirmDelete()">Confirm</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+<script>
+  
+
+    $("#LoadingStatus").html("Loading....");
+    $.get("/Home/GetUserList", null, DataBind);
+    function DataBind(userList) {
+        var SetData = $("#SetUserList");
+        for (var i = 0; i < userList.length; i++) {
+            var Data = "<tr class='row_" + userList[i].Id + "'>" +
+                "<td>" + userList[i].Name + "</td>" +
+                "<td>" + userList[i].Email + "</td>" +
+                "<td>" + userList[i].Phone_no + "</td>" +
+                "<td>" + "<a href='#' class='btn btn-warning' onclick='EditUserRecord(" + userList[i].Id + ")' ><span class='glyphicon glyphicon-edit'></span></a>" + "</td>" +
+                "<td>" + "<a href='#' class='btn btn-danger' onclick='DeleteUserRecord(" + userList[i].Id + ")'><span class='glyphicon glyphicon-trash'></span></a>" + "</td>" +
+                "</tr>";
+            SetData.append(Data);
+            $("#LoadingStatus").html(" ");
+
+        }
+    }
+
+
+
+    function AddNewUser(Id) {
+        $("#form")[0].reset();
+        $("#Id").val(0);
+        $("#DropDwn option:selected").text("--Select State--");
+        $("#ModalTitle").html("Add New User");
+        $("#MyModal").modal();
+
+    }
+
+
+
+
+
+    
+    function EditUserRecord(Id) {
+        var url = "/Home/GetUserById?Id=" + Id;
+        $("#ModalTitle").html("Update User Record");
+        $("#MyModal").modal();
+        $.ajax({
+            type: "GET",
+            url: url,
+            success: function (data) {
+                var obj = JSON.parse(data);
+                $("#Id").val(obj.Id);
+                $("#Name").val(obj.Name);
+                $("#Phone_no").val(obj.Phone_no);
+                $("#Email").val(obj.Email);
+                $("#DropDwn option:selected").val(obj.State);
+                $("#DropDwn option:selected").val(obj.City);
+
+            }
+        })
+    }
+
+    $("#SaveUserRecord").click(function () {
+        var data = $("#SubmitForm").serialize();
+        $.ajax({
+            type: "Post",
+            url: "/Home/SaveDataInDatabase",
+            data: data,
+            success: function (result) {
+                alert("Success!..");
+                window.location.href = "/Home/index";
+                $("#MyModal").modal("hide");
+
+            }
+        })
+    })
+
+   
+    var DeleteUserRecord = function (Id) {
+        $("#Id").val(Id);
+        $("#DeleteConfirmation").modal("show");
+    }
+    var ConfirmDelete = function () {
+        var Id = $("#Id").val();
+        $.ajax({
+            type: "POST",
+            url: "/Home/DeleteUserRecord?Id=" + Id,
+            success: function (result) {
+                $("#DeleteConfirmation").modal("hide");
+                $(".row_" + Id).remove();
+            }
+        })
+    }
+    
+    
+
+</script>
+
+
+
+
+
+   
